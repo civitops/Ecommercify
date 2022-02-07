@@ -1,20 +1,20 @@
 package user
 
 type Entity struct {
-	// ID string
-	Name        string  `json:"name"`
-	PhoneNo     string  `json:"phoneNo"`
-	Email       string  `json:"email"`
-	HomeAddress Address `json:"homeAddress"`
+	ID          uint    `json:"id" mapstructure:"id,omitempty"`
+	Name        string  `json:"name" mapstructure:"name,omitempty"`
+	PhoneNo     string  `json:"phoneNo" mapstructure:"phone_no,omitempty"`
+	Email       string  `json:"email" mapstructure:"email,omitempty"`
+	HomeAddress Address `json:"homeAddress" mapstructure:"homeaddress,omitempty,squash"`
 	// WorkAddress     Address `json:"workAddress"`
 	// DeliveryAddress Address `json:"deliveryAddress"`
-	IsAdmin bool `json:"isAdmin"`
+	IsAdmin bool `json:"isAdmin" mapstructure:"is_admin,omitempty"`
 }
 
 type Address struct {
-	PhoneNo    string `json:"phoneNo"`
-	AdressLine string `json:"addressLine1"`
-	City       string `json:"city"`
-	PinCode    string `json:"pinCode"`
-	Landmark   string `json:"landmark"`
+	PhoneNo    string `json:"phoneNo" mapstructure:"homeaddress_phoneno,omitempty"`
+	AdressLine string `json:"addressLine1" mapstructure:"homeaddress_address_line,omitempty"`
+	City       string `json:"city" mapstructure:"homeaddress_city,omitempty"`
+	PinCode    string `json:"pinCode" mapstructure:"homeaddress_pin_code,omitempty"`
+	Landmark   string `json:"landmark" mapstructure:"homeaddress_landmark,omitempty"`
 }

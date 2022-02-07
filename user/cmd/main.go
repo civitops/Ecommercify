@@ -10,9 +10,11 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/civitops/Ecommercify/user/Implementation/user"
 	"github.com/civitops/Ecommercify/user/pkg/config"
 	"github.com/civitops/Ecommercify/user/transport/endpoints"
 	httpTransport "github.com/civitops/Ecommercify/user/transport/http"
+	"github.com/jackc/pgx/v4"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -23,9 +25,6 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
 	logger "github.com/civitops/Ecommercify/user/pkg/log"
-	natshelper "github.com/civitops/Ecommercify/user/pkg/nats"
-
-	"github.com/nats-io/nats.go"
 )
 
 func main() {
@@ -68,27 +67,49 @@ func main() {
 	propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
 	tracer := provider.Tracer("notifSvc")
 
-	// setting few basic nats opts and connecting to nats
-	opts := natshelper.SetupConnOptions(zapLogger, &wg)
-	natsConn, err := nats.Connect(nats.DefaultURL, opts...)
+	// // setting few basic nats opts and connecting to nats
+	// opts := natshelper.SetupConnOptions(zapLogger, &wg)
+	// natsConn, err := nats.Connect(nats.DefaultURL, opts...)
+	// if err != nil {
+	// 	zapLogger.Fatalf("nats connection failed: %v", err.Error())
+	// }
+
+	// // creating jetStream from natsConn
+	// js, err := natsConn.JetStream()
+	// if err != nil {
+	// 	zapLogger.Fatalf("nats-js connection failed: %v", err.Error())
+	// }
+
+	// // creating the notification stream for event processing
+	// if err := natshelper.CreateStream(js, zapLogger); err != nil {
+	// 	zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
+	// }
+
+	conn, err := pgx.Connect(ctx, cfg.DatabseURL)
 	if err != nil {
-		zapLogger.Fatalf("nats connection failed: %v", err.Error())
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
 	}
-
-	// creating jetStream from natsConn
-	js, err := natsConn.JetStream()
-	if err != nil {
-		zapLogger.Fatalf("nats-js connection failed: %v", err.Error())
-	}
-
-	// creating the notification stream for event processing
-	if err := natshelper.CreateStream(js, zapLogger); err != nil {
-		zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
-	}
-
 	// declare service here
 	end := endpoints.MakeEndpoints(tracer)
 	h := httpTransport.NewHTTPService(end, tracer)
+	obj := user.Entity{
+		ID:      1,
+		Name:    "vutu",
+		PhoneNo: "howru",
+		Email:   "hgfv@G",
+		HomeAddress: user.Address{
+			PhoneNo:    "fwef",
+			AdressLine: "ff",
+			City:       "dheh",
+			PinCode:    "dfrrt",
+			Landmark:   "ff",
+		},
+		IsAdmin: true,
+	}
+	pgRepo := user.NewPostgresRepo(zapLogger, conn)
+	u := user.NewUserService(zapLogger, *cfg, pgRepo)
+	fmt.Println(u.Update(ctx, obj))
 
 	// creating server with timeout and assigning the routes
 	server := &http.Server{
@@ -103,16 +124,16 @@ func main() {
 		),
 	}
 
-	// start subscribing for notif events
-	go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
-		// for the subscriber
-		wg.Add(1)
-		// add your service here
+	// // start subscribing for notif events
+	// go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
+	// 	// for the subscriber
+	// 	wg.Add(1)
+	// 	// add your service here
 
-		zapLogger.Info("subscriber returned")
-		// closing the connection because subscriber returned
-		conn.Close()
-	}(ctx, natsConn, &wg)
+	// 	zapLogger.Info("subscriber returned")
+	// 	// closing the connection because subscriber returned
+	// 	conn.Close()
+	// }(ctx, natsConn, &wg)
 
 	// start listening and serving http server
 	go func() {
@@ -146,7 +167,7 @@ func main() {
 	cancelCtx()
 
 	// wait till the nats connection is closed and pullSubscriber returned
-	wg.Wait()
+	// wg.Wait()
 
 	zapLogger.Info("application exited")
 }
