@@ -10,9 +10,9 @@ import (
 	"sync"
 	"syscall"
 
-	"notif/pkg/config"
-	"notif/transport/endpoints"
-	httpTransport "notif/transport/http"
+	"github.com/civitops/Ecommercify/user/pkg/config"
+	"github.com/civitops/Ecommercify/user/transport/endpoints"
+	httpTransport "github.com/civitops/Ecommercify/user/transport/http"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -22,8 +22,8 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
-	logger "notif/pkg/log"
-	natshelper "notif/pkg/nats"
+	logger "github.com/civitops/Ecommercify/user/pkg/log"
+	natshelper "github.com/civitops/Ecommercify/user/pkg/nats"
 
 	"github.com/nats-io/nats.go"
 )

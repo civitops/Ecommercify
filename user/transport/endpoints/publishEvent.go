@@ -2,7 +2,8 @@ package endpoints
 
 import (
 	"context"
-	"notif/pkg"
+
+	"github.com/civitops/Ecommercify/user/pkg"
 
 	"go.opentelemetry.io/otel/trace"
 )

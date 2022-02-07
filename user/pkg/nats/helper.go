@@ -2,9 +2,10 @@ package natshelper
 
 import (
 	"fmt"
-	"notif/pkg/config"
 	"sync"
 	"time"
+
+	"github.com/civitops/Ecommercify/user/pkg/config"
 
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"

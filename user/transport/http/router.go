@@ -3,8 +3,8 @@ package http
 import (
 	"net/http"
 
-	"notif/pkg"
-	"notif/transport/endpoints"
+	"github.com/civitops/Ecommercify/user/pkg"
+	"github.com/civitops/Ecommercify/user/transport/endpoints"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/codes"
