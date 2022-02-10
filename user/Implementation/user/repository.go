@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/mitchellh/mapstructure"
@@ -13,7 +14,7 @@ type Repository interface {
 	Create(ctx context.Context, e Entity) (uint, error)
 	Update(ctx context.Context, e Entity) error
 	Delete(ctx context.Context, ID uint) error
-	Get(ctx context.Context, ID uint) error
+	Get(ctx context.Context, ID uint) (Entity, error)
 }
 
 type postgresRepo struct {
@@ -82,6 +83,25 @@ func (rp *postgresRepo) Delete(ctx context.Context, ID uint) error {
 	return err
 }
 
-func (rp *postgresRepo) Get(ctx context.Context, ID uint) error {
-	return nil
+func (rp *postgresRepo) Get(ctx context.Context,
+	sel map[string]interface{}, where map[string]interface{}) (Entity, error) {
+	var result Entity
+	sb := strings.Builder{}
+
+	if len(where) > 0 {
+		sb.WriteString("WHERE ")
+	}
+
+	idx := 1
+	for i := range where {
+		sb.WriteString(fmt.Sprintf(+" $" + idx + " "))
+		idx++
+	}
+	stmt := `SELECT id,name FROM users WHERE id=$1`
+	err := rp.conn.QueryRow(ctx, stmt, ID).Scan(&result)
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+	fmt.Print(result)
+	return Entity{}, nil
 }

@@ -11,7 +11,7 @@ type Service interface {
 	Create(ctx context.Context, e Entity) (uint, error)
 	Update(ctx context.Context, e Entity) error
 	Delete(ctx context.Context, ID uint) error
-	Get(ctx context.Context, ID uint) error
+	Get(ctx context.Context, ID uint) (Entity, error)
 }
 
 type userService struct {
@@ -38,9 +38,9 @@ func (s *userService) Update(ctx context.Context, e Entity) error {
 }
 
 func (s *userService) Delete(ctx context.Context, ID uint) error {
-	return nil
+	return s.repo.Delete(ctx, ID)
 }
 
-func (s *userService) Get(ctx context.Context, ID uint) error {
-	return nil
+func (s *userService) Get(ctx context.Context, ID uint) (Entity, error) {
+	return s.repo.Get(ctx, ID)
 }

@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/jackc/pgx/v4 v4.14.1
+	github.com/mitchellh/mapstructure v1.4.3
 	github.com/nats-io/nats.go v1.13.1-0.20211122170419-d7c1d78a50fc
 	github.com/spf13/viper v1.9.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0
@@ -39,7 +40,6 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
-	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nats-io/nats-server/v2 v2.6.6 // indirect

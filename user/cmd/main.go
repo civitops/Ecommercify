@@ -93,23 +93,23 @@ func main() {
 	// declare service here
 	end := endpoints.MakeEndpoints(tracer)
 	h := httpTransport.NewHTTPService(end, tracer)
-	obj := user.Entity{
-		ID:      1,
-		Name:    "vutu",
-		PhoneNo: "howru",
-		Email:   "hgfv@G",
-		HomeAddress: user.Address{
-			PhoneNo:    "fwef",
-			AdressLine: "ff",
-			City:       "dheh",
-			PinCode:    "dfrrt",
-			Landmark:   "ff",
-		},
-		IsAdmin: true,
-	}
+	// obj := user.Entity{
+	// 	ID:      1,
+	// 	Name:    "bob",
+	// 	PhoneNo: "9675555",
+	// 	Email:   "hgfvSD@G",
+	// 	HomeAddress: user.Address{
+	// 		PhoneNo:    "fwef",
+	// 		AdressLine: "ff",
+	// 		City:       "dheh",
+	// 		PinCode:    "dfrrt",
+	// 		Landmark:   "ff",
+	// 	},
+	// 	IsAdmin: true,
+	// }
 	pgRepo := user.NewPostgresRepo(zapLogger, conn)
 	u := user.NewUserService(zapLogger, *cfg, pgRepo)
-	fmt.Println(u.Update(ctx, obj))
+	fmt.Println(u.Get(ctx, 4))
 
 	// creating server with timeout and assigning the routes
 	server := &http.Server{
