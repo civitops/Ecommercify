@@ -10,7 +10,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/civitops/Ecommercify/user/Implementation/user"
+	"github.com/civitops/Ecommercify/user/implementation/user"
 	"github.com/civitops/Ecommercify/user/pkg/config"
 	"github.com/civitops/Ecommercify/user/transport/endpoints"
 	httpTransport "github.com/civitops/Ecommercify/user/transport/http"
@@ -109,7 +109,13 @@ func main() {
 	// }
 	pgRepo := user.NewPostgresRepo(zapLogger, conn)
 	u := user.NewUserService(zapLogger, *cfg, pgRepo)
-	fmt.Println(u.Get(ctx, 4))
+	where := map[string]user.WhereClause{
+		"id": {
+			Condition: ">=",
+			Value:     3,
+		},
+	}
+	fmt.Println(u.Get(ctx, where))
 
 	// creating server with timeout and assigning the routes
 	server := &http.Server{

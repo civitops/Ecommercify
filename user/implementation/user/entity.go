@@ -1,8 +1,8 @@
 package user
 
 type Entity struct {
-	ID          uint    `json:"id" mapstructure:"id,omitempty"`
-	Name        string  `json:"name" mapstructure:"name,omitempty"`
+	ID          uint    `json:"id" mapstructure:"id,omitempty" db:"id"`
+	Name        string  `json:"name" mapstructure:"name,omitempty"  db:"name"`
 	PhoneNo     string  `json:"phoneNo" mapstructure:"phone_no,omitempty"`
 	Email       string  `json:"email" mapstructure:"email,omitempty"`
 	HomeAddress Address `json:"homeAddress" mapstructure:"homeaddress,omitempty,squash"`

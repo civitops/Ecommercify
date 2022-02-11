@@ -14,7 +14,11 @@ type Repository interface {
 	Create(ctx context.Context, e Entity) (uint, error)
 	Update(ctx context.Context, e Entity) error
 	Delete(ctx context.Context, ID uint) error
-	Get(ctx context.Context, ID uint) (Entity, error)
+	Get(ctx context.Context, where map[string]WhereClause) (Entity, error)
+}
+type WhereClause struct {
+	Condition string
+	Value     interface{}
 }
 
 type postgresRepo struct {
@@ -83,25 +87,51 @@ func (rp *postgresRepo) Delete(ctx context.Context, ID uint) error {
 	return err
 }
 
-func (rp *postgresRepo) Get(ctx context.Context,
-	sel map[string]interface{}, where map[string]interface{}) (Entity, error) {
+func (rp *postgresRepo) Get(ctx context.Context, where map[string]WhereClause) (Entity, error) {
 	var result Entity
+
+	// var res map[string]interface{}
+	stmt, val := rp.buildGetStmt(where)
+	err := rp.conn.QueryRow(ctx, stmt, val...).Scan(&result.ID, &result.Name, &result.Email,
+		&result.PhoneNo, &result.HomeAddress.AdressLine, &result.HomeAddress.City,
+		&result.HomeAddress.PhoneNo, &result.HomeAddress.PinCode, &result.HomeAddress.Landmark,
+		&result.IsAdmin)
+
+	// if err != nil {
+	// 	rp.log.Errorf("err while Scaning: %s", err.Error())
+	// }
+
+	return result, err
+}
+
+func (rp *postgresRepo) buildGetStmt(where map[string]WhereClause) (string, []interface{}) {
 	sb := strings.Builder{}
+	whereLen := len(where)
+	val := make([]interface{}, 0, whereLen)
 
-	if len(where) > 0 {
+	sb.WriteString("FROM users ")
+
+	if whereLen > 0 {
 		sb.WriteString("WHERE ")
+		idx := 1
+
+		for k, v := range where {
+			if v.Condition == "" {
+				v.Condition = "="
+			}
+
+			stmt := fmt.Sprintf("%s %s $%v AND ", k, v.Condition, idx)
+			if idx == whereLen {
+				stmt = fmt.Sprintf("%s %s $%v", k, v.Condition, idx)
+			}
+
+			sb.WriteString(stmt)
+			val = append(val, v.Value)
+			idx++
+		}
 	}
 
-	idx := 1
-	for i := range where {
-		sb.WriteString(fmt.Sprintf(+" $" + idx + " "))
-		idx++
-	}
-	stmt := `SELECT id,name FROM users WHERE id=$1`
-	err := rp.conn.QueryRow(ctx, stmt, ID).Scan(&result)
-	if err != nil {
-		fmt.Print(err.Error())
-	}
-	fmt.Print(result)
-	return Entity{}, nil
+	stmt := fmt.Sprintf("SELECT * %s", sb.String())
+
+	return stmt, val
 }

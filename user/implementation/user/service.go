@@ -11,7 +11,7 @@ type Service interface {
 	Create(ctx context.Context, e Entity) (uint, error)
 	Update(ctx context.Context, e Entity) error
 	Delete(ctx context.Context, ID uint) error
-	Get(ctx context.Context, ID uint) (Entity, error)
+	Get(ctx context.Context, where map[string]WhereClause) (Entity, error)
 }
 
 type userService struct {
@@ -41,6 +41,6 @@ func (s *userService) Delete(ctx context.Context, ID uint) error {
 	return s.repo.Delete(ctx, ID)
 }
 
-func (s *userService) Get(ctx context.Context, ID uint) (Entity, error) {
-	return s.repo.Get(ctx, ID)
+func (s *userService) Get(ctx context.Context, where map[string]WhereClause) (Entity, error) {
+	return s.repo.Get(ctx, where)
 }
