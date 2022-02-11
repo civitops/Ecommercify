@@ -1,0 +1,17 @@
+version: '3.7'
+services:
+    citusdata:
+        image: citusdata/citus:10.2
+        restart: always
+        environment:
+          - POSTGRES_USER=postgres
+          - POSTGRES_PASSWORD=mypass
+          - POSTGRES_DB=ecommercify
+        logging:
+          options:
+            max-size: 10m
+            max-file: "3"
+        ports:
+          - '5432:5432'
+        volumes: 
+          - ./citus-data:/var/lib/citusdata/data
