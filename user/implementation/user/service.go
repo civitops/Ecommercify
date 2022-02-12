@@ -12,7 +12,7 @@ type Service interface {
 	Create(ctx context.Context, e Entity) (uint, error)
 	Update(ctx context.Context, e Entity) error
 	Delete(ctx context.Context, ID uint) error
-	Get(ctx context.Context, where map[string]WhereClause) (Entity, error)
+	Get(ctx context.Context, whereAnd Entity, whereOR Entity) (Entity, error)
 }
 
 type userService struct {
@@ -50,8 +50,8 @@ func (s *userService) Delete(ctx context.Context, ID uint) error {
 	return s.repo.Delete(ctxSpan, ID)
 }
 
-func (s *userService) Get(ctx context.Context, where map[string]WhereClause) (Entity, error) {
+func (s *userService) Get(ctx context.Context, whereAnd Entity, whereOR Entity) (Entity, error) {
 	ctxSpan, span := s.trace.Start(ctx, "get-svc-func")
 	defer span.End()
-	return s.repo.Get(ctxSpan, where)
+	return s.repo.Get(ctxSpan, whereAnd, whereOR)
 }

@@ -1,6 +1,9 @@
 package user
 
+import "gorm.io/gorm"
+
 type Entity struct {
+	gorm.Model
 	ID          uint    `json:"id" mapstructure:"id,omitempty" db:"id"`
 	Name        string  `json:"name" mapstructure:"name,omitempty"  db:"name"`
 	PhoneNo     string  `json:"phoneNo" mapstructure:"phone_no,omitempty"`

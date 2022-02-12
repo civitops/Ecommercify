@@ -3,165 +3,104 @@ package user
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/mitchellh/mapstructure"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Repository interface {
 	Create(ctx context.Context, e Entity) (uint, error)
 	Update(ctx context.Context, e Entity) error
 	Delete(ctx context.Context, ID uint) error
-	Get(ctx context.Context, where map[string]WhereClause) (Entity, error)
-}
-type WhereClause struct {
-	Condition string
-	Value     interface{}
+	Get(ctx context.Context, whereAnd Entity, whereOR Entity) (Entity, error)
 }
 
 type postgresRepo struct {
-	log   *zap.SugaredLogger
-	conn  *pgx.Conn
-	trace trace.Tracer
+	log    *zap.SugaredLogger
+	conn   *pgx.Conn
+	pgConn *gorm.DB
+	trace  trace.Tracer
 }
 
-func NewPostgresRepo(l *zap.SugaredLogger, c *pgx.Conn, t trace.Tracer) Repository {
+func NewPostgresRepo(l *zap.SugaredLogger, c *pgx.Conn, p *gorm.DB, t trace.Tracer) Repository {
+	p.AutoMigrate(&Entity{})
 	return &postgresRepo{
-		log:   l,
-		conn:  c,
-		trace: t,
+		log:    l,
+		conn:   c,
+		pgConn: p,
+		trace:  t,
 	}
 }
 
 func (rp *postgresRepo) Create(ctx context.Context, e Entity) (uint, error) {
+
 	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
 	defer span.End()
 
-	// sql statement to insert row
-	stmt := `INSERT INTO users (
-		name,email,phone_no,
-		homeaddress_phoneno,homeaddress_address_line,
-		homeaddress_city,homeaddress_pin_code,
-		homeaddress_landmark,is_admin) VALUES 
-		($1,$2,$3,$4,$5,$6,$7,$8,$9)
-		RETURNING id
-		`
-	var insertedID uint
-	err := rp.conn.QueryRow(ctxSpan, stmt, e.Name, e.Email, e.PhoneNo,
-		e.HomeAddress.PhoneNo, e.HomeAddress.AdressLine,
-		e.HomeAddress.City, e.HomeAddress.PinCode,
-		e.HomeAddress.Landmark, e.IsAdmin).Scan(&insertedID)
-
-	if err != nil {
-		rp.errLogWithSpanAttributes("err while inserting into users", err, span)
+	result := rp.pgConn.WithContext(ctxSpan).Create(&e)
+	if result.Error != nil {
+		rp.errLogWithSpanAttributes("err while inserting into users", result.Error, span)
 	}
 
-	return insertedID, err
+	return e.ID, result.Error
 }
 
 func (rp *postgresRepo) Update(ctx context.Context, e Entity) error {
+
 	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
 	defer span.End()
-	var (
-		result     map[string]interface{}
-		updateStmt string
-		values     []interface{}
-	)
-	err := mapstructure.Decode(e, &result)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	i := 0
-	len := len(result)
-	for k := range result {
-		i++
-		if i == len {
-			updateStmt = updateStmt + fmt.Sprintf(" %s=$%d", k, i)
-		} else {
-			updateStmt = updateStmt + fmt.Sprintf(" %s=$%d,", k, i)
-		}
 
-		values = append(values, result[k])
+	r := rp.pgConn.WithContext(ctxSpan).Model(&e).Updates(e)
+
+	if r.Error != nil {
+		rp.errLogWithSpanAttributes("err while updating ", r.Error, span)
 	}
 
-	stmt := fmt.Sprintf("UPDATE users SET %s WHERE id=%d", updateStmt, e.ID)
-	fmt.Println(stmt)
-	_, err = rp.conn.Exec(ctxSpan, stmt, values...)
-	if err != nil {
-		rp.errLogWithSpanAttributes("err while updating ", err, span)
-	}
-	return err
+	return r.Error
 }
 
 func (rp *postgresRepo) Delete(ctx context.Context, ID uint) error {
-	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
-	defer span.End()
-	stmt := `DELETE FROM users WHERE id=$1`
-	_, err := rp.conn.Exec(ctxSpan, stmt, ID)
-	if err != nil {
-		rp.errLogWithSpanAttributes("err while deleting users", err, span)
-	}
-	return err
-}
-
-func (rp *postgresRepo) Get(ctx context.Context, where map[string]WhereClause) (Entity, error) {
 
 	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
 	defer span.End()
 
-	var result Entity
-
-	// var res map[string]interface{}
-	stmt, val := rp.buildGetStmt(where)
-	err := rp.conn.QueryRow(ctxSpan, stmt, val...).Scan(&result.ID, &result.Name, &result.Email,
-		&result.PhoneNo, &result.HomeAddress.AdressLine, &result.HomeAddress.City,
-		&result.HomeAddress.PhoneNo, &result.HomeAddress.PinCode, &result.HomeAddress.Landmark,
-		&result.IsAdmin)
-
-	// if err != nil {
-	// 	rp.log.Errorf("err while Scaning: %s", err.Error())
-	// }
-	if err != nil {
-		rp.errLogWithSpanAttributes("err while Getting Users", err, span)
+	result := rp.pgConn.WithContext(ctxSpan).Delete(&Entity{}, ID)
+	if result.Error != nil {
+		rp.errLogWithSpanAttributes("err while deleting users", result.Error, span)
 	}
 
-	return result, err
+	return result.Error
 }
 
-func (rp *postgresRepo) buildGetStmt(where map[string]WhereClause) (string, []interface{}) {
-	sb := strings.Builder{}
-	whereLen := len(where)
-	val := make([]interface{}, 0, whereLen)
+func (rp *postgresRepo) Get(ctx context.Context, whereAnd Entity, whereOR Entity) (Entity, error) {
+	var (
+		andRes map[string]interface{}
+		orRes  map[string]interface{}
+		user   Entity
+	)
 
-	sb.WriteString("FROM users ")
+	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
+	defer span.End()
 
-	if whereLen > 0 {
-		sb.WriteString("WHERE ")
-		idx := 1
+	err := mapstructure.Decode(whereAnd, &andRes)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	err = mapstructure.Decode(whereOR, &orRes)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	pgResult := rp.pgConn.WithContext(ctxSpan).Where(andRes).Or(orRes).First(&user)
 
-		for k, v := range where {
-			if v.Condition == "" {
-				v.Condition = "="
-			}
-
-			stmt := fmt.Sprintf("%s %s $%v AND ", k, v.Condition, idx)
-			if idx == whereLen {
-				stmt = fmt.Sprintf("%s %s $%v", k, v.Condition, idx)
-			}
-
-			sb.WriteString(stmt)
-			val = append(val, v.Value)
-			idx++
-		}
+	if pgResult.Error != nil {
+		rp.errLogWithSpanAttributes("err while Getting Users", pgResult.Error, span)
 	}
 
-	stmt := fmt.Sprintf("SELECT * %s", sb.String())
-
-	return stmt, val
+	return user, pgResult.Error
 }
 
 func (rp *postgresRepo) errLogWithSpanAttributes(msg string, err error, span trace.Span) {
