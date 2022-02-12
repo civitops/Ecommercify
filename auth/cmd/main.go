@@ -10,11 +10,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/civitops/Ecommercify/auth/implementation/user"
 	"github.com/civitops/Ecommercify/auth/pkg/config"
 	"github.com/civitops/Ecommercify/auth/transport/endpoints"
 	httpTransport "github.com/civitops/Ecommercify/auth/transport/http"
-	"github.com/jackc/pgx/v4"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -85,27 +83,16 @@ func main() {
 	// 	zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
 	// }
 
-	conn, err := pgx.Connect(ctx, cfg.DatabseURL)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
+	// conn, err := pgx.Connect(ctx, cfg.DatabseURL)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+	// 	os.Exit(1)
+	// }
 
 	// declare service here
-	pgRepo := user.NewPostgresRepo(zapLogger, conn)
-	u := user.NewUserService(zapLogger, *cfg, pgRepo)
 
 	end := endpoints.MakeEndpoints(tracer)
 	h := httpTransport.NewHTTPService(end, tracer)
-
-	where := map[string]user.WhereClause{
-		"id": {
-			Condition: ">=",
-			Value:     3,
-		},
-	}
-
-	fmt.Println(u.Get(ctx, where))
 
 	// creating server with timeout and assigning the routes
 	server := &http.Server{
