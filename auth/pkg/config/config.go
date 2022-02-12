@@ -7,19 +7,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-type NotifConfig struct {
-	PORT     string `mapstructure:"PORT"`
-	Mode     string `mapstructure:"MODE"`
-	LogLevel string `mapstructure:"LOG_LEVEL"`
-	Encoding string `mapstructure:"ENCODING"`
+type UserConfig struct {
+	PORT       string `mapstructure:"PORT"`
+	Mode       string `mapstructure:"MODE"`
+	LogLevel   string `mapstructure:"LOG_LEVEL"`
+	Encoding   string `mapstructure:"ENCODING"`
+	DatabseURL string `mapstructure:"DATABASE_URL"`
 }
 
 var defaultsValue = map[string]string{
-	"PORT": "6969",
-	"MODE": Development,
+	"PORT":         "6969",
+	"MODE":         Development,
+	"DATABASE_URL": "postgres://postgres:mypass@localhost:5432/ecommercify",
 }
 
-func LoadConfig(path string) (*NotifConfig, error) {
+func LoadConfig(path string) (*UserConfig, error) {
 	// "" -> loads timezone as UTC:
 	loc, err := time.LoadLocation("")
 	if err != nil {
@@ -41,7 +43,7 @@ func LoadConfig(path string) (*NotifConfig, error) {
 		return nil, err
 	}
 
-	var cfg NotifConfig
+	var cfg UserConfig
 
 	err = viper.Unmarshal(&cfg)
 

@@ -10,9 +10,11 @@ import (
 	"sync"
 	"syscall"
 
-	"notif/pkg/config"
-	"notif/transport/endpoints"
-	httpTransport "notif/transport/http"
+	"github.com/civitops/Ecommercify/auth/implementation/user"
+	"github.com/civitops/Ecommercify/auth/pkg/config"
+	"github.com/civitops/Ecommercify/auth/transport/endpoints"
+	httpTransport "github.com/civitops/Ecommercify/auth/transport/http"
+	"github.com/jackc/pgx/v4"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -22,10 +24,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
-	logger "notif/pkg/log"
-	natshelper "notif/pkg/nats"
-
-	"github.com/nats-io/nats.go"
+	logger "github.com/civitops/Ecommercify/auth/pkg/log"
 )
 
 func main() {
@@ -53,7 +52,7 @@ func main() {
 	// Defining resource attributes
 	resource := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceNameKey.String("notif-svc"),
+		semconv.ServiceNameKey.String("auth-svc"),
 		semconv.ServiceVersionKey.String("1.0.0"),
 		attribute.Int64("ID", 1),
 	)
@@ -66,29 +65,47 @@ func main() {
 
 	// b3 propagator initilizes
 	propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
-	tracer := provider.Tracer("notifSvc")
+	tracer := provider.Tracer("authSvc")
 
-	// setting few basic nats opts and connecting to nats
-	opts := natshelper.SetupConnOptions(zapLogger, &wg)
-	natsConn, err := nats.Connect(nats.DefaultURL, opts...)
+	// // setting few basic nats opts and connecting to nats
+	// opts := natshelper.SetupConnOptions(zapLogger, &wg)
+	// natsConn, err := nats.Connect(nats.DefaultURL, opts...)
+	// if err != nil {
+	// 	zapLogger.Fatalf("nats connection failed: %v", err.Error())
+	// }
+
+	// // creating jetStream from natsConn
+	// js, err := natsConn.JetStream()
+	// if err != nil {
+	// 	zapLogger.Fatalf("nats-js connection failed: %v", err.Error())
+	// }
+
+	// // creating the notification stream for event processing
+	// if err := natshelper.CreateStream(js, zapLogger); err != nil {
+	// 	zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
+	// }
+
+	conn, err := pgx.Connect(ctx, cfg.DatabseURL)
 	if err != nil {
-		zapLogger.Fatalf("nats connection failed: %v", err.Error())
-	}
-
-	// creating jetStream from natsConn
-	js, err := natsConn.JetStream()
-	if err != nil {
-		zapLogger.Fatalf("nats-js connection failed: %v", err.Error())
-	}
-
-	// creating the notification stream for event processing
-	if err := natshelper.CreateStream(js, zapLogger); err != nil {
-		zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
 	}
 
 	// declare service here
+	pgRepo := user.NewPostgresRepo(zapLogger, conn)
+	u := user.NewUserService(zapLogger, *cfg, pgRepo)
+
 	end := endpoints.MakeEndpoints(tracer)
 	h := httpTransport.NewHTTPService(end, tracer)
+
+	where := map[string]user.WhereClause{
+		"id": {
+			Condition: ">=",
+			Value:     3,
+		},
+	}
+
+	fmt.Println(u.Get(ctx, where))
 
 	// creating server with timeout and assigning the routes
 	server := &http.Server{
@@ -103,16 +120,16 @@ func main() {
 		),
 	}
 
-	// start subscribing for notif events
-	go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
-		// for the subscriber
-		wg.Add(1)
-		// add your service here
+	// // start subscribing for notif events
+	// go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
+	// 	// for the subscriber
+	// 	wg.Add(1)
+	// 	// add your service here
 
-		zapLogger.Info("subscriber returned")
-		// closing the connection because subscriber returned
-		conn.Close()
-	}(ctx, natsConn, &wg)
+	// 	zapLogger.Info("subscriber returned")
+	// 	// closing the connection because subscriber returned
+	// 	conn.Close()
+	// }(ctx, natsConn, &wg)
 
 	// start listening and serving http server
 	go func() {
@@ -146,7 +163,7 @@ func main() {
 	cancelCtx()
 
 	// wait till the nats connection is closed and pullSubscriber returned
-	wg.Wait()
+	// wg.Wait()
 
 	zapLogger.Info("application exited")
 }
