@@ -39,13 +39,19 @@ func (s *userService) Create(ctx context.Context, e Entity) (uint, error) {
 }
 
 func (s *userService) Update(ctx context.Context, e Entity) error {
-	return s.repo.Update(ctx, e)
+	ctxSpan, span := s.trace.Start(ctx, "update-svc-func")
+	defer span.End()
+	return s.repo.Update(ctxSpan, e)
 }
 
 func (s *userService) Delete(ctx context.Context, ID uint) error {
-	return s.repo.Delete(ctx, ID)
+	ctxSpan, span := s.trace.Start(ctx, "delete-svc-func")
+	defer span.End()
+	return s.repo.Delete(ctxSpan, ID)
 }
 
 func (s *userService) Get(ctx context.Context, where map[string]WhereClause) (Entity, error) {
-	return s.repo.Get(ctx, where)
+	ctxSpan, span := s.trace.Start(ctx, "get-svc-func")
+	defer span.End()
+	return s.repo.Get(ctxSpan, where)
 }

@@ -34,7 +34,7 @@ func main() {
 	wg.Add(1)
 
 	// fetchs configuration
-	cfg, err := config.LoadConfig(".")
+	cfg, err := config.LoadConfig("../")
 	if err != nil {
 		fmt.Printf("failed to load config: %s", err.Error())
 		os.Exit(1)
@@ -85,7 +85,7 @@ func main() {
 	// 	zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
 	// }
 
-	conn, err := pgx.Connect(ctx, cfg.DatabseURL)
+	conn, err := pgx.Connect(ctx, cfg.DatabseURI)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)

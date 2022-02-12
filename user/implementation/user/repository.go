@@ -64,6 +64,8 @@ func (rp *postgresRepo) Create(ctx context.Context, e Entity) (uint, error) {
 }
 
 func (rp *postgresRepo) Update(ctx context.Context, e Entity) error {
+	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
+	defer span.End()
 	var (
 		result     map[string]interface{}
 		updateStmt string
@@ -88,23 +90,34 @@ func (rp *postgresRepo) Update(ctx context.Context, e Entity) error {
 
 	stmt := fmt.Sprintf("UPDATE users SET %s WHERE id=%d", updateStmt, e.ID)
 	fmt.Println(stmt)
-	_, err = rp.conn.Exec(ctx, stmt, values...)
-
+	_, err = rp.conn.Exec(ctxSpan, stmt, values...)
+	if err != nil {
+		rp.errLogWithSpanAttributes("err while updating ", err, span)
+	}
 	return err
 }
 
 func (rp *postgresRepo) Delete(ctx context.Context, ID uint) error {
+	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
+	defer span.End()
 	stmt := `DELETE FROM users WHERE id=$1`
-	_, err := rp.conn.Exec(ctx, stmt, ID)
+	_, err := rp.conn.Exec(ctxSpan, stmt, ID)
+	if err != nil {
+		rp.errLogWithSpanAttributes("err while deleting users", err, span)
+	}
 	return err
 }
 
 func (rp *postgresRepo) Get(ctx context.Context, where map[string]WhereClause) (Entity, error) {
+
+	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
+	defer span.End()
+
 	var result Entity
 
 	// var res map[string]interface{}
 	stmt, val := rp.buildGetStmt(where)
-	err := rp.conn.QueryRow(ctx, stmt, val...).Scan(&result.ID, &result.Name, &result.Email,
+	err := rp.conn.QueryRow(ctxSpan, stmt, val...).Scan(&result.ID, &result.Name, &result.Email,
 		&result.PhoneNo, &result.HomeAddress.AdressLine, &result.HomeAddress.City,
 		&result.HomeAddress.PhoneNo, &result.HomeAddress.PinCode, &result.HomeAddress.Landmark,
 		&result.IsAdmin)
@@ -112,6 +125,9 @@ func (rp *postgresRepo) Get(ctx context.Context, where map[string]WhereClause) (
 	// if err != nil {
 	// 	rp.log.Errorf("err while Scaning: %s", err.Error())
 	// }
+	if err != nil {
+		rp.errLogWithSpanAttributes("err while Getting Users", err, span)
+	}
 
 	return result, err
 }
