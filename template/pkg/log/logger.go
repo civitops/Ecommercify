@@ -1,14 +1,15 @@
 package log
 
 import (
-	"notif/pkg/config"
 	"os"
+
+	"github.com/civitops/Ecommercify/user/pkg/config"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-func NewLogger(cfg *config.NotifConfig) *zap.SugaredLogger {
+func NewLogger(cfg *config.UserConfig) *zap.SugaredLogger {
 	logLevel := zaplogLevel(cfg)
 
 	logWriter := zapcore.AddSync(os.Stderr)
@@ -43,7 +44,7 @@ func NewLogger(cfg *config.NotifConfig) *zap.SugaredLogger {
 	return logSugar
 }
 
-func zaplogLevel(cfg *config.NotifConfig) (logLevel zapcore.Level) {
+func zaplogLevel(cfg *config.UserConfig) (logLevel zapcore.Level) {
 	switch cfg.LogLevel {
 	case "debug":
 		logLevel = zapcore.DebugLevel

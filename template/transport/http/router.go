@@ -3,26 +3,36 @@ package http
 import (
 	"net/http"
 
-	"notif/pkg"
-	"notif/transport/endpoints"
-
-	"github.com/gin-gonic/gin"
+	"github.com/civitops/Ecommercify/user/pkg"
+	"github.com/civitops/Ecommercify/user/transport/endpoints"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
+type httpSvc struct {
+	t   trace.Tracer
+	log *zap.SugaredLogger
+}
+
 // NewHTTPService takes all the endpoints and returns handler.
-func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer) http.Handler {
+func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer, l *zap.SugaredLogger) http.Handler {
+	h := httpSvc{
+		t:   t,
+		log: l,
+	}
 
-	r := gin.New()
+	r := echo.New()
 
-	r.HandleMethodNotAllowed = true
-	r.Use(gin.Recovery())
-	r.Use(gin.Logger())
+	r.Use(middleware.Recover())
+	r.Use(middleware.Logger())
 
-	notif := r.Group("/notif-svc/v1")
+	notif := r.Group("/user-svc/v1")
 	{
-		notif.POST("/create", endpointRequestEncoder(endpoints.HellowEndpoint, t))
+		notif.POST("/hello", h.endpointRequestEncoder(endpoints.HellowEndpoint))
+		notif.POST("/create", h.endpointRequestEncoder(endpoints.CreateEndpoint))
 	}
 
 	return r
@@ -30,14 +40,15 @@ func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer) http.Handler 
 
 // endpointRequestEncoder encodes request and does error handling
 // and send response.
-func endpointRequestEncoder(endpoint pkg.Endpoint, t trace.Tracer) gin.HandlerFunc {
-	fn := func(c *gin.Context) {
+func (h *httpSvc) endpointRequestEncoder(endpoint pkg.Endpoint) echo.HandlerFunc {
+	return func(c echo.Context) error {
 		var statusCode int
-		ctx, span := t.Start(c, "endpoint-Req-Encoder")
+
+		ctx, span := h.t.Start(c.Request().Context(), "endpoint-Req-Encoder")
 		defer span.End()
 
 		// process the request with its handler
-		response, err := endpoint(ctx, c.Request.Body)
+		response, err := endpoint(ctx, c.Request().Body)
 		if err != nil {
 			// if statusCode is not send then return InternalServerErr
 			switch e := err.(type) {
@@ -48,18 +59,17 @@ func endpointRequestEncoder(endpoint pkg.Endpoint, t trace.Tracer) gin.HandlerFu
 				statusCode = http.StatusInternalServerError
 			}
 
-			c.AbortWithStatusJSON(statusCode, gin.H{
+			c.JSON(statusCode, map[string]interface{}{
 				"error":   true,
 				"message": err.Error(),
 			})
 
-			return
+			return err
 		}
 
 		// if err did not occur then return Ok status
 		span.SetStatus(codes.Ok, "request proccessed suceessfully")
 		c.JSON(http.StatusOK, response)
+		return nil
 	}
-
-	return gin.HandlerFunc(fn)
 }

@@ -20,5 +20,8 @@ trace:
 
 server:
 	go run cmd/main.go
-	
-.PHONY: js trace server
+
+citus_start:
+	docker run -d --name citus -p 5432:5432 -e POSTGRES_PASSWORD=mypass citusdata/citus:10.2
+
+.PHONY: js trace server citus_start

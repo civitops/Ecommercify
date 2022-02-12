@@ -7,18 +7,18 @@ type Error interface {
 	Status() int
 }
 
-// NotifErr represents an error with an associated HTTP status code.
-type NotifErr struct {
+// UserErr represents an error with an associated HTTP status code.
+type UserErr struct {
 	Code int
 	Err  error
 }
 
-// Error allows NotifErr to satisfy the error interface.
-func (e NotifErr) Error() string {
+// Error allows UserErr to satisfy the error interface.
+func (e UserErr) Error() string {
 	return e.Err.Error()
 }
 
 // Status returns the HTTP status code.
-func (e NotifErr) Status() int {
+func (e UserErr) Status() int {
 	return e.Code
 }
