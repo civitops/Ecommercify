@@ -1,1 +1,3 @@
 citus-data
+.env
+ca.pem
