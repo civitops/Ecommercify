@@ -7,6 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/mitchellh/mapstructure"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -22,18 +24,24 @@ type WhereClause struct {
 }
 
 type postgresRepo struct {
-	log  *zap.SugaredLogger
-	conn *pgx.Conn
+	log   *zap.SugaredLogger
+	conn  *pgx.Conn
+	trace trace.Tracer
 }
 
-func NewPostgresRepo(l *zap.SugaredLogger, c *pgx.Conn) Repository {
+func NewPostgresRepo(l *zap.SugaredLogger, c *pgx.Conn, t trace.Tracer) Repository {
 	return &postgresRepo{
-		log:  l,
-		conn: c,
+		log:   l,
+		conn:  c,
+		trace: t,
 	}
 }
 
 func (rp *postgresRepo) Create(ctx context.Context, e Entity) (uint, error) {
+	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
+	defer span.End()
+
+	// sql statement to insert row
 	stmt := `INSERT INTO users (
 		name,email,phone_no,
 		homeaddress_phoneno,homeaddress_address_line,
@@ -42,13 +50,17 @@ func (rp *postgresRepo) Create(ctx context.Context, e Entity) (uint, error) {
 		($1,$2,$3,$4,$5,$6,$7,$8,$9)
 		RETURNING id
 		`
-	var insertedId uint
-	err := rp.conn.QueryRow(ctx, stmt, e.Name, e.Email, e.PhoneNo,
+	var insertedID uint
+	err := rp.conn.QueryRow(ctxSpan, stmt, e.Name, e.Email, e.PhoneNo,
 		e.HomeAddress.PhoneNo, e.HomeAddress.AdressLine,
 		e.HomeAddress.City, e.HomeAddress.PinCode,
-		e.HomeAddress.Landmark, e.IsAdmin).Scan(&insertedId)
+		e.HomeAddress.Landmark, e.IsAdmin).Scan(&insertedID)
 
-	return insertedId, err
+	if err != nil {
+		rp.errLogWithSpanAttributes("err while inserting into users", err, span)
+	}
+
+	return insertedID, err
 }
 
 func (rp *postgresRepo) Update(ctx context.Context, e Entity) error {
@@ -134,4 +146,14 @@ func (rp *postgresRepo) buildGetStmt(where map[string]WhereClause) (string, []in
 	stmt := fmt.Sprintf("SELECT * %s", sb.String())
 
 	return stmt, val
+}
+
+func (rp *postgresRepo) errLogWithSpanAttributes(msg string, err error, span trace.Span) {
+	// mark span with the error
+	span.RecordError(err)
+	span.SetStatus(codes.Error, err.Error())
+
+	// extracting traceID for logging purpose
+	traceID := span.SpanContext().TraceID().String()
+	rp.log.Errorf(msg+"err: %v", err, zap.String("traceID", traceID))
 }

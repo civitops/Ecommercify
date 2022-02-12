@@ -5,24 +5,34 @@ import (
 
 	"github.com/civitops/Ecommercify/user/pkg"
 	"github.com/civitops/Ecommercify/user/transport/endpoints"
-
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
+type httpSvc struct {
+	t   trace.Tracer
+	log *zap.SugaredLogger
+}
+
 // NewHTTPService takes all the endpoints and returns handler.
-func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer) http.Handler {
+func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer, l *zap.SugaredLogger) http.Handler {
+	h := httpSvc{
+		t:   t,
+		log: l,
+	}
 
 	r := echo.New()
 
 	r.Use(middleware.Recover())
 	r.Use(middleware.Logger())
 
-	notif := r.Group("/notif-svc/v1")
+	notif := r.Group("/user-svc/v1")
 	{
-		notif.POST("/create", endpointRequestEncoder(endpoints.HellowEndpoint, t))
+		notif.POST("/hello", h.endpointRequestEncoder(endpoints.HellowEndpoint))
+		notif.POST("/create", h.endpointRequestEncoder(endpoints.CreateEndpoint))
 	}
 
 	return r
@@ -30,11 +40,11 @@ func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer) http.Handler 
 
 // endpointRequestEncoder encodes request and does error handling
 // and send response.
-func endpointRequestEncoder(endpoint pkg.Endpoint, t trace.Tracer) echo.HandlerFunc {
+func (h *httpSvc) endpointRequestEncoder(endpoint pkg.Endpoint) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var statusCode int
 
-		ctx, span := t.Start(c.Request().Context(), "endpoint-Req-Encoder")
+		ctx, span := h.t.Start(c.Request().Context(), "endpoint-Req-Encoder")
 		defer span.End()
 
 		// process the request with its handler

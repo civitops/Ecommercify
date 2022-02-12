@@ -52,7 +52,7 @@ func main() {
 	// Defining resource attributes
 	resource := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceNameKey.String("notif-svc"),
+		semconv.ServiceNameKey.String("user-svc"),
 		semconv.ServiceVersionKey.String("1.0.0"),
 		attribute.Int64("ID", 1),
 	)
@@ -65,7 +65,7 @@ func main() {
 
 	// b3 propagator initilizes
 	propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
-	tracer := provider.Tracer("notifSvc")
+	tracer := provider.Tracer("userSvc")
 
 	// // setting few basic nats opts and connecting to nats
 	// opts := natshelper.SetupConnOptions(zapLogger, &wg)
@@ -91,31 +91,11 @@ func main() {
 		os.Exit(1)
 	}
 	// declare service here
-	end := endpoints.MakeEndpoints(tracer)
-	h := httpTransport.NewHTTPService(end, tracer)
-	// obj := user.Entity{
-	// 	ID:      1,
-	// 	Name:    "bob",
-	// 	PhoneNo: "9675555",
-	// 	Email:   "hgfvSD@G",
-	// 	HomeAddress: user.Address{
-	// 		PhoneNo:    "fwef",
-	// 		AdressLine: "ff",
-	// 		City:       "dheh",
-	// 		PinCode:    "dfrrt",
-	// 		Landmark:   "ff",
-	// 	},
-	// 	IsAdmin: true,
-	// }
-	pgRepo := user.NewPostgresRepo(zapLogger, conn)
-	u := user.NewUserService(zapLogger, *cfg, pgRepo)
-	where := map[string]user.WhereClause{
-		"id": {
-			Condition: ">=",
-			Value:     3,
-		},
-	}
-	fmt.Println(u.Get(ctx, where))
+	pgRepo := user.NewPostgresRepo(zapLogger, conn, tracer)
+	u := user.NewUserService(zapLogger, *cfg, pgRepo, tracer)
+
+	end := endpoints.MakeEndpoints(tracer, u)
+	h := httpTransport.NewHTTPService(end, tracer, zapLogger)
 
 	// creating server with timeout and assigning the routes
 	server := &http.Server{
