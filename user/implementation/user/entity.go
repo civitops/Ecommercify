@@ -4,19 +4,19 @@ import "gorm.io/gorm"
 
 type Entity struct {
 	gorm.Model
-	ID              uint    `json:"id" mapstructure:"id,omitempty" gorm:"primaryKey;autoIncrement"`
-	Name            string  `json:"name" mapstructure:"name,omitempty" gorm:"not null"`
-	PhoneNo         string  `json:"phoneNo" mapstructure:"phone_no,omitempty" gorm:"unique"`
-	Email           string  `json:"email" mapstructure:"email,omitempty" gorm:"unique"`
-	HomeAddress     Address `json:"homeAddress" mapstructure:"homeaddress,omitempty,squash" gorm:"embedded;embeddedPrefix:homeaddress_"`
-	DeliveryAddress Address `json:"deliveryAddress" mapstructure:"deliveryaddress,omitempty,squash" gorm:"embedded;embeddedPrefix:deliveryaddress_"`
-	IsAdmin         bool    `json:"isAdmin" mapstructure:"is_admin,omitempty" goorm:"default:false"`
+	ID              uint    `json:"id"  gorm:"primaryKey;autoIncrement"`
+	Name            string  `json:"name" gorm:"not null"`
+	PhoneNo         string  `json:"phoneNo"  gorm:"unique"`
+	Email           string  `json:"email" gorm:"unique"`
+	HomeAddress     Address `json:"homeAddress"  gorm:"embedded;embeddedPrefix:homeaddress_"`
+	DeliveryAddress Address `json:"deliveryAddress"  gorm:"embedded;embeddedPrefix:deliveryaddress_"`
+	IsAdmin         bool    `json:"isAdmin" goorm:"default:false"`
 }
 
 type Address struct {
-	PhoneNo    string `json:"phoneNo" mapstructure:"homeaddress_phoneno,omitempty"`
-	AdressLine string `json:"addressLine1" mapstructure:"homeaddress_address_line,omitempty"`
-	City       string `json:"city" mapstructure:"homeaddress_city,omitempty"`
-	PinCode    string `json:"pinCode" mapstructure:"homeaddress_pin_code,omitempty"`
-	Landmark   string `json:"landmark" mapstructure:"homeaddress_landmark,omitempty"`
+	PhoneNo    string `json:"phoneNo"`
+	AdressLine string `json:"addressLine1" `
+	City       string `json:"city"`
+	PinCode    string `json:"pinCode"`
+	Landmark   string `json:"landmark"`
 }

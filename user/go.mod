@@ -6,7 +6,6 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/labstack/echo/v4 v4.6.3
-	github.com/mitchellh/mapstructure v1.4.3
 	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
 	github.com/spf13/viper v1.9.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0
@@ -22,6 +21,7 @@ require (
 require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.2 // indirect
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
 )
 
 require (
