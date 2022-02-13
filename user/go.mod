@@ -4,9 +4,7 @@ go 1.17
 
 require (
 	github.com/gin-gonic/gin v1.7.7
-	github.com/jackc/pgx/v4 v4.14.1
 	github.com/labstack/echo/v4 v4.6.3
-	github.com/mitchellh/mapstructure v1.4.3
 	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
 	github.com/spf13/viper v1.9.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0
@@ -16,6 +14,14 @@ require (
 	go.opentelemetry.io/otel/sdk v1.3.0
 	go.opentelemetry.io/otel/trace v1.3.0
 	go.uber.org/zap v1.17.0
+	gorm.io/gorm v1.22.3
+)
+
+require (
+	github.com/jackc/pgx/v4 v4.15.0 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.2 // indirect
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
 )
 
 require (
@@ -31,12 +37,12 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.10.1 // indirect
+	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.2.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.9.1 // indirect
+	github.com/jackc/pgtype v1.10.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
@@ -70,4 +76,5 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gorm.io/driver/postgres v1.2.3
 )

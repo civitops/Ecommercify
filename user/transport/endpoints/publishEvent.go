@@ -17,6 +17,7 @@ import (
 type Endpoints struct {
 	HellowEndpoint pkg.Endpoint
 	CreateEndpoint pkg.Endpoint
+	UpdateEndpoint pkg.Endpoint
 }
 
 // MakeEndpoints takes service and returns Endpoints
@@ -24,6 +25,7 @@ func MakeEndpoints(tracer trace.Tracer, u user.Service) Endpoints {
 	return Endpoints{
 		HellowEndpoint: helloEndpointHandler(tracer),
 		CreateEndpoint: createEndpointHandler(tracer, u),
+		UpdateEndpoint: updateEndpointHandler(tracer, u),
 	}
 }
 
@@ -93,6 +95,43 @@ func createEndpointHandler(tracer trace.Tracer, u user.Service) pkg.Endpoint {
 
 		response.Message = "ok"
 		response.Data = insertedID
+		return response, nil
+	}
+}
+
+func updateEndpointHandler(tracer trace.Tracer, u user.Service) pkg.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		ctxSpan, span := tracer.Start(ctx, "update-endpoint-handler")
+		defer span.End()
+
+		var response transport.GenericResponse
+		var body user.Entity
+
+		data, err := ioutil.ReadAll(request.(io.Reader))
+		if err != nil {
+			return nil, pkg.UserErr{
+				Code: http.StatusBadRequest,
+				Err:  err,
+			}
+		}
+
+		err = json.Unmarshal(data, &body)
+		if err != nil {
+			return nil, pkg.UserErr{
+				Code: http.StatusBadRequest,
+				Err:  err,
+			}
+		}
+
+		err = u.Update(ctxSpan, body)
+		if err != nil {
+			return nil, pkg.UserErr{
+				Code: http.StatusInternalServerError,
+				Err:  err,
+			}
+		}
+
+		response.Message = "ok"
 		return response, nil
 	}
 }

@@ -2,38 +2,40 @@ package user
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/mitchellh/mapstructure"
-	"go.opentelemetry.io/otel/codes"
+	"github.com/civitops/Ecommercify/user/pkg/config"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Repository interface {
 	Create(ctx context.Context, e Entity) (uint, error)
 	Update(ctx context.Context, e Entity) error
 	Delete(ctx context.Context, ID uint) error
-	Get(ctx context.Context, where map[string]WhereClause) (Entity, error)
-}
-type WhereClause struct {
-	Condition string
-	Value     interface{}
+	Get(ctx context.Context, sel string, where map[string]interface{}) (Entity, error)
 }
 
 type postgresRepo struct {
-	log   *zap.SugaredLogger
-	conn  *pgx.Conn
-	trace trace.Tracer
+	log    *zap.SugaredLogger
+	pgConn *gorm.DB
+	trace  trace.Tracer
 }
 
-func NewPostgresRepo(l *zap.SugaredLogger, c *pgx.Conn, t trace.Tracer) Repository {
+type Tabler interface {
+	TableName() string
+}
+
+// TableName overrides the table name used by User to `profiles`
+func (Entity) TableName() string {
+	return config.UserTable
+}
+
+func NewPostgresRepo(l *zap.SugaredLogger, p *gorm.DB, t trace.Tracer) Repository {
 	return &postgresRepo{
-		log:   l,
-		conn:  c,
-		trace: t,
+		log:    l,
+		pgConn: p,
+		trace:  t,
 	}
 }
 
@@ -41,119 +43,47 @@ func (rp *postgresRepo) Create(ctx context.Context, e Entity) (uint, error) {
 	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
 	defer span.End()
 
-	// sql statement to insert row
-	stmt := `INSERT INTO users (
-		name,email,phone_no,
-		homeaddress_phoneno,homeaddress_address_line,
-		homeaddress_city,homeaddress_pin_code,
-		homeaddress_landmark,is_admin) VALUES 
-		($1,$2,$3,$4,$5,$6,$7,$8,$9)
-		RETURNING id
-		`
-	var insertedID uint
-	err := rp.conn.QueryRow(ctxSpan, stmt, e.Name, e.Email, e.PhoneNo,
-		e.HomeAddress.PhoneNo, e.HomeAddress.AdressLine,
-		e.HomeAddress.City, e.HomeAddress.PinCode,
-		e.HomeAddress.Landmark, e.IsAdmin).Scan(&insertedID)
-
+	err := rp.pgConn.WithContext(ctxSpan).Table(e.TableName()).Create(&e).Error
 	if err != nil {
-		rp.errLogWithSpanAttributes("err while inserting into users", err, span)
+		errLogWithSpanAttributes("err while inserting into users", err, span, rp.log)
 	}
 
-	return insertedID, err
+	return e.ID, err
 }
 
 func (rp *postgresRepo) Update(ctx context.Context, e Entity) error {
-	var (
-		result     map[string]interface{}
-		updateStmt string
-		values     []interface{}
-	)
-	err := mapstructure.Decode(e, &result)
+	ctxSpan, span := rp.trace.Start(ctx, "update-repo-func")
+	defer span.End()
+
+	err := rp.pgConn.WithContext(ctxSpan).Table(e.TableName()).Updates(e).Error
 	if err != nil {
-		fmt.Println(err.Error())
+		errLogWithSpanAttributes("err while updating ", err, span, rp.log)
 	}
-	i := 0
-	len := len(result)
-	for k := range result {
-		i++
-		if i == len {
-			updateStmt = updateStmt + fmt.Sprintf(" %s=$%d", k, i)
-		} else {
-			updateStmt = updateStmt + fmt.Sprintf(" %s=$%d,", k, i)
-		}
-
-		values = append(values, result[k])
-	}
-
-	stmt := fmt.Sprintf("UPDATE users SET %s WHERE id=%d", updateStmt, e.ID)
-	fmt.Println(stmt)
-	_, err = rp.conn.Exec(ctx, stmt, values...)
 
 	return err
 }
 
 func (rp *postgresRepo) Delete(ctx context.Context, ID uint) error {
-	stmt := `DELETE FROM users WHERE id=$1`
-	_, err := rp.conn.Exec(ctx, stmt, ID)
+	ctxSpan, span := rp.trace.Start(ctx, "delete-repo-func")
+	defer span.End()
+
+	err := rp.pgConn.WithContext(ctxSpan).Table(config.UserTable).Delete(&Entity{}, ID).Error
+	if err != nil {
+		errLogWithSpanAttributes("err while deleting users", err, span, rp.log)
+	}
+
 	return err
 }
 
-func (rp *postgresRepo) Get(ctx context.Context, where map[string]WhereClause) (Entity, error) {
-	var result Entity
+func (rp *postgresRepo) Get(ctx context.Context, sel string, where map[string]interface{}) (Entity, error) {
+	ctxSpan, span := rp.trace.Start(ctx, "get-repo-func")
+	defer span.End()
 
-	// var res map[string]interface{}
-	stmt, val := rp.buildGetStmt(where)
-	err := rp.conn.QueryRow(ctx, stmt, val...).Scan(&result.ID, &result.Name, &result.Email,
-		&result.PhoneNo, &result.HomeAddress.AdressLine, &result.HomeAddress.City,
-		&result.HomeAddress.PhoneNo, &result.HomeAddress.PinCode, &result.HomeAddress.Landmark,
-		&result.IsAdmin)
-
-	// if err != nil {
-	// 	rp.log.Errorf("err while Scaning: %s", err.Error())
-	// }
-
-	return result, err
-}
-
-func (rp *postgresRepo) buildGetStmt(where map[string]WhereClause) (string, []interface{}) {
-	sb := strings.Builder{}
-	whereLen := len(where)
-	val := make([]interface{}, 0, whereLen)
-
-	sb.WriteString("FROM users ")
-
-	if whereLen > 0 {
-		sb.WriteString("WHERE ")
-		idx := 1
-
-		for k, v := range where {
-			if v.Condition == "" {
-				v.Condition = "="
-			}
-
-			stmt := fmt.Sprintf("%s %s $%v AND ", k, v.Condition, idx)
-			if idx == whereLen {
-				stmt = fmt.Sprintf("%s %s $%v", k, v.Condition, idx)
-			}
-
-			sb.WriteString(stmt)
-			val = append(val, v.Value)
-			idx++
-		}
+	var user Entity
+	err := rp.pgConn.WithContext(ctxSpan).Table(config.UserTable).Select(sel).Where(where).First(&user).Error
+	if err != nil {
+		errLogWithSpanAttributes("err while Getting Users", err, span, rp.log)
 	}
 
-	stmt := fmt.Sprintf("SELECT * %s", sb.String())
-
-	return stmt, val
-}
-
-func (rp *postgresRepo) errLogWithSpanAttributes(msg string, err error, span trace.Span) {
-	// mark span with the error
-	span.RecordError(err)
-	span.SetStatus(codes.Error, err.Error())
-
-	// extracting traceID for logging purpose
-	traceID := span.SpanContext().TraceID().String()
-	rp.log.Errorf(msg+"err: %v", err, zap.String("traceID", traceID))
+	return user, err
 }

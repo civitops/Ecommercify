@@ -14,7 +14,8 @@ import (
 	"github.com/civitops/Ecommercify/user/pkg/config"
 	"github.com/civitops/Ecommercify/user/transport/endpoints"
 	httpTransport "github.com/civitops/Ecommercify/user/transport/http"
-	"github.com/jackc/pgx/v4"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -34,7 +35,7 @@ func main() {
 	wg.Add(1)
 
 	// fetchs configuration
-	cfg, err := config.LoadConfig(".")
+	cfg, err := config.LoadConfig("../")
 	if err != nil {
 		fmt.Printf("failed to load config: %s", err.Error())
 		os.Exit(1)
@@ -85,13 +86,16 @@ func main() {
 	// 	zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
 	// }
 
-	conn, err := pgx.Connect(ctx, cfg.DatabseURL)
+	// connecting postgres DB through Go-ORM
+	pgConn, err := gorm.Open(postgres.Open(cfg.DatabseURI), &gorm.Config{
+		SkipDefaultTransaction: true,
+	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+		zapLogger.Fatalf("Unable to connect to database: %v\n", err)
 	}
+
 	// declare service here
-	pgRepo := user.NewPostgresRepo(zapLogger, conn, tracer)
+	pgRepo := user.NewPostgresRepo(zapLogger, pgConn, tracer)
 	u := user.NewUserService(zapLogger, *cfg, pgRepo, tracer)
 
 	end := endpoints.MakeEndpoints(tracer, u)

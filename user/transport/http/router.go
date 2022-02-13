@@ -29,10 +29,11 @@ func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer, l *zap.Sugare
 	r.Use(middleware.Recover())
 	r.Use(middleware.Logger())
 
-	notif := r.Group("/user-svc/v1")
+	user := r.Group("/user-svc/v1")
 	{
-		notif.POST("/hello", h.endpointRequestEncoder(endpoints.HellowEndpoint))
-		notif.POST("/create", h.endpointRequestEncoder(endpoints.CreateEndpoint))
+		user.POST("/hello", h.endpointRequestEncoder(endpoints.HellowEndpoint))
+		user.POST("/create", h.endpointRequestEncoder(endpoints.CreateEndpoint))
+		user.PATCH("/update", h.endpointRequestEncoder(endpoints.UpdateEndpoint))
 	}
 
 	return r
