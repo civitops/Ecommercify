@@ -26,6 +26,15 @@ type postgresRepo struct {
 	trace  trace.Tracer
 }
 
+type Tabler interface {
+	TableName() string
+}
+
+// TableName overrides the table name used by User to `profiles`
+func (Entity) TableName() string {
+	return "users"
+}
+
 func NewPostgresRepo(l *zap.SugaredLogger, c *pgx.Conn, p *gorm.DB, t trace.Tracer) Repository {
 	p.AutoMigrate(&Entity{})
 	return &postgresRepo{
@@ -41,7 +50,7 @@ func (rp *postgresRepo) Create(ctx context.Context, e Entity) (uint, error) {
 	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
 	defer span.End()
 
-	result := rp.pgConn.WithContext(ctxSpan).Create(&e)
+	result := rp.pgConn.WithContext(ctxSpan).Table("users").Create(&e)
 	if result.Error != nil {
 		rp.errLogWithSpanAttributes("err while inserting into users", result.Error, span)
 	}
@@ -54,7 +63,7 @@ func (rp *postgresRepo) Update(ctx context.Context, e Entity) error {
 	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
 	defer span.End()
 
-	r := rp.pgConn.WithContext(ctxSpan).Model(&e).Updates(e)
+	r := rp.pgConn.WithContext(ctxSpan).Table("users").Updates(e)
 
 	if r.Error != nil {
 		rp.errLogWithSpanAttributes("err while updating ", r.Error, span)
@@ -68,7 +77,7 @@ func (rp *postgresRepo) Delete(ctx context.Context, ID uint) error {
 	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
 	defer span.End()
 
-	result := rp.pgConn.WithContext(ctxSpan).Delete(&Entity{}, ID)
+	result := rp.pgConn.WithContext(ctxSpan).Table("users").Delete(&Entity{}, ID)
 	if result.Error != nil {
 		rp.errLogWithSpanAttributes("err while deleting users", result.Error, span)
 	}
@@ -94,7 +103,7 @@ func (rp *postgresRepo) Get(ctx context.Context, whereAnd Entity, whereOR Entity
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	pgResult := rp.pgConn.WithContext(ctxSpan).Where(andRes).Or(orRes).First(&user)
+	pgResult := rp.pgConn.WithContext(ctxSpan).Table("users").Where(andRes).Or(orRes).First(&user)
 
 	if pgResult.Error != nil {
 		rp.errLogWithSpanAttributes("err while Getting Users", pgResult.Error, span)

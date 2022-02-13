@@ -4,14 +4,13 @@ import "gorm.io/gorm"
 
 type Entity struct {
 	gorm.Model
-	ID          uint    `json:"id" mapstructure:"id,omitempty" db:"id"`
-	Name        string  `json:"name" mapstructure:"name,omitempty"  db:"name"`
-	PhoneNo     string  `json:"phoneNo" mapstructure:"phone_no,omitempty"`
-	Email       string  `json:"email" mapstructure:"email,omitempty"`
-	HomeAddress Address `json:"homeAddress" mapstructure:"homeaddress,omitempty,squash"`
-	// WorkAddress     Address `json:"workAddress"`
-	// DeliveryAddress Address `json:"deliveryAddress"`
-	IsAdmin bool `json:"isAdmin" mapstructure:"is_admin,omitempty"`
+	ID              uint    `json:"id" mapstructure:"id,omitempty" gorm:"primaryKey;autoIncrement"`
+	Name            string  `json:"name" mapstructure:"name,omitempty"  gorm:"not null"`
+	PhoneNo         string  `json:"phoneNo" mapstructure:"phone_no,omitempty" gorm:"unique"`
+	Email           string  `json:"email" mapstructure:"email,omitempty" gorm:"unique"`
+	HomeAddress     Address `json:"homeAddress" mapstructure:"homeaddress,omitempty,squash" gorm:"embedded;embeddedPrefix:homeaddress_"`
+	DeliveryAddress Address `json:"deliveryAddress" mapstructure:"deliveryaddress,omitempty,squash" gorm:"embedded;embeddedPrefix:deliveryaddress_"`
+	IsAdmin         bool    `json:"isAdmin" mapstructure:"is_admin,omitempty"`
 }
 
 type Address struct {
