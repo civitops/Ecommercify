@@ -12,8 +12,10 @@ import (
 
 	"github.com/civitops/Ecommercify/user/implementation/user"
 	"github.com/civitops/Ecommercify/user/pkg/config"
+	natshelper "github.com/civitops/Ecommercify/user/pkg/nats"
 	"github.com/civitops/Ecommercify/user/transport/endpoints"
 	httpTransport "github.com/civitops/Ecommercify/user/transport/http"
+	"github.com/nats-io/nats.go"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -68,23 +70,23 @@ func main() {
 	propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
 	tracer := provider.Tracer("userSvc")
 
-	// // setting few basic nats opts and connecting to nats
-	// opts := natshelper.SetupConnOptions(zapLogger, &wg)
-	// natsConn, err := nats.Connect(nats.DefaultURL, opts...)
-	// if err != nil {
-	// 	zapLogger.Fatalf("nats connection failed: %v", err.Error())
-	// }
+	// setting few basic nats opts and connecting to nats
+	opts := natshelper.SetupConnOptions(zapLogger, &wg)
+	natsConn, err := nats.Connect(nats.DefaultURL, opts...)
+	if err != nil {
+		zapLogger.Fatalf("nats connection failed: %v", err.Error())
+	}
 
-	// // creating jetStream from natsConn
-	// js, err := natsConn.JetStream()
-	// if err != nil {
-	// 	zapLogger.Fatalf("nats-js connection failed: %v", err.Error())
-	// }
+	// creating jetStream from natsConn
+	js, err := natsConn.JetStream()
+	if err != nil {
+		zapLogger.Fatalf("nats-js connection failed: %v", err.Error())
+	}
 
-	// // creating the notification stream for event processing
-	// if err := natshelper.CreateStream(js, zapLogger); err != nil {
-	// 	zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
-	// }
+	// creating the notification stream for event processing
+	if err := natshelper.CreateStream(js, zapLogger); err != nil {
+		zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
+	}
 
 	// connecting postgres DB through Go-ORM
 	pgConn, err := gorm.Open(postgres.Open(cfg.DatabseURI), &gorm.Config{
@@ -114,16 +116,16 @@ func main() {
 		),
 	}
 
-	// // start subscribing for notif events
-	// go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
-	// 	// for the subscriber
-	// 	wg.Add(1)
-	// 	// add your service here
+	// start subscribing for user events
+	go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
+		// for the subscriber
+		wg.Add(1)
+		// add your service here
 
-	// 	zapLogger.Info("subscriber returned")
-	// 	// closing the connection because subscriber returned
-	// 	conn.Close()
-	// }(ctx, natsConn, &wg)
+		zapLogger.Info("subscriber returned")
+		// closing the connection because subscriber returned
+		conn.Close()
+	}(ctx, natsConn, &wg)
 
 	// start listening and serving http server
 	go func() {
@@ -157,7 +159,7 @@ func main() {
 	cancelCtx()
 
 	// wait till the nats connection is closed and pullSubscriber returned
-	// wg.Wait()
+	wg.Wait()
 
 	zapLogger.Info("application exited")
 }

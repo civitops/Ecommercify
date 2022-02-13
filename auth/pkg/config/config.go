@@ -12,13 +12,13 @@ type UserConfig struct {
 	Mode       string `mapstructure:"MODE"`
 	LogLevel   string `mapstructure:"LOG_LEVEL"`
 	Encoding   string `mapstructure:"ENCODING"`
-	DatabseURL string `mapstructure:"DATABASE_URL"`
+	DatabseURI string `mapstructure:"DATABASE_URI"`
 }
 
 var defaultsValue = map[string]string{
 	"PORT":         "6969",
 	"MODE":         Development,
-	"DATABASE_URL": "postgres://postgres:mypass@localhost:5432/ecommercify",
+	"DATABASE_URI": "postgres://postgres:mypass@localhost:5432/ecommercify",
 }
 
 func LoadConfig(path string) (*UserConfig, error) {

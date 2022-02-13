@@ -32,7 +32,7 @@ func main() {
 	wg.Add(1)
 
 	// fetchs configuration
-	cfg, err := config.LoadConfig(".")
+	cfg, err := config.LoadConfig("../")
 	if err != nil {
 		fmt.Printf("failed to load config: %s", err.Error())
 		os.Exit(1)

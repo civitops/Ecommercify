@@ -5,7 +5,7 @@ import "time"
 const (
 	Development string = "dev"
 	Production  string = "prod"
-	StreamName  string = "NOTIFS"
+	StreamName  string = "USERS"
 )
 
 var (
