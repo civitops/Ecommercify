@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/mitchellh/mapstructure"
@@ -86,22 +85,23 @@ func (rp *postgresRepo) Delete(ctx context.Context, ID uint) error {
 }
 
 func (rp *postgresRepo) Get(ctx context.Context, whereAnd Entity, whereOR Entity) (Entity, error) {
+
+	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
+	defer span.End()
+
 	var (
 		andRes map[string]interface{}
 		orRes  map[string]interface{}
 		user   Entity
 	)
 
-	ctxSpan, span := rp.trace.Start(ctx, "create-repo-func")
-	defer span.End()
-
 	err := mapstructure.Decode(whereAnd, &andRes)
 	if err != nil {
-		fmt.Println(err.Error())
+		return Entity{}, err
 	}
 	err = mapstructure.Decode(whereOR, &orRes)
 	if err != nil {
-		fmt.Println(err.Error())
+		return Entity{}, err
 	}
 	pgResult := rp.pgConn.WithContext(ctxSpan).Table("users").Where(andRes).Or(orRes).First(&user)
 
