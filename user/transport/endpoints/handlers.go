@@ -29,7 +29,7 @@ func MakeEndpoints(tracer trace.Tracer, u user.Service) Endpoints {
 	}
 }
 
-// createNotifHandler to recv email from http as json send the pubAck
+// helloEndpointHandler for testing http service
 func helloEndpointHandler(tracer trace.Tracer) pkg.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		_, span := tracer.Start(ctx, "Hello-endpoint-handler")

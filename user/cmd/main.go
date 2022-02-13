@@ -10,6 +10,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/civitops/Ecommercify/user/implementation/event"
 	"github.com/civitops/Ecommercify/user/implementation/user"
 	"github.com/civitops/Ecommercify/user/pkg/config"
 	natshelper "github.com/civitops/Ecommercify/user/pkg/nats"
@@ -98,9 +99,9 @@ func main() {
 
 	// declare service here
 	pgRepo := user.NewPostgresRepo(zapLogger, pgConn, tracer)
-	u := user.NewUserService(zapLogger, *cfg, pgRepo, tracer)
-
-	end := endpoints.MakeEndpoints(tracer, u)
+	userSvc := user.NewUserService(zapLogger, *cfg, pgRepo, tracer)
+	eventSvc := event.NewEventService(zapLogger, js, userSvc, tracer, propagator)
+	end := endpoints.MakeEndpoints(tracer, userSvc)
 	h := httpTransport.NewHTTPService(end, tracer, zapLogger)
 
 	// creating server with timeout and assigning the routes
@@ -118,12 +119,12 @@ func main() {
 
 	// start subscribing for user events
 	go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
-		// for the subscriber
+		// to wait for the subscriber to return
 		wg.Add(1)
-		// add your service here
+		eventSvc.RecvUserCreateRequest(ctx, wg)
 
-		zapLogger.Info("subscriber returned")
 		// closing the connection because subscriber returned
+		zapLogger.Info("subscriber returned")
 		conn.Close()
 	}(ctx, natsConn, &wg)
 

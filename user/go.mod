@@ -3,6 +3,7 @@ module github.com/civitops/Ecommercify/user
 go 1.17
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/gin-gonic/gin v1.7.7
 	github.com/labstack/echo/v4 v4.6.3
 	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
