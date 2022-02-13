@@ -120,7 +120,6 @@ func main() {
 	// start subscribing for user events
 	go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
 		// to wait for the subscriber to return
-		wg.Add(1)
 		eventSvc.RecvUserCreateRequest(ctx, wg)
 
 		// closing the connection because subscriber returned

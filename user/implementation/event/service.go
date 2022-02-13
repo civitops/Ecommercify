@@ -84,6 +84,7 @@ func (s *eventSvc) SendUserRequest(ctx context.Context, e user.Entity) (*nats.Pu
 }
 
 func (s *eventSvc) RecvUserCreateRequest(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
 	// preparing args for new consumer
 	subj := fmt.Sprintf("%s.create", config.StreamName)
 	durableName := fmt.Sprintf("%s_pullSub", config.StreamName)
