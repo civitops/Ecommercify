@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"net/http"
+	"sync"
+
 	"github.com/civitops/Ecommercify/user/implementation/user"
 	"github.com/civitops/Ecommercify/user/pkg"
 	"github.com/civitops/Ecommercify/user/pkg/config"
-	"net/http"
-	"sync"
 
 	"github.com/avast/retry-go"
 	"github.com/nats-io/nats.go"

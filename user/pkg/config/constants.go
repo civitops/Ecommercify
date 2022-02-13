@@ -21,4 +21,5 @@ var (
 
 const (
 	UserTable string = "users"
+	authTable string = "auth"
 )
