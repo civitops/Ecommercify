@@ -14,7 +14,6 @@ import (
 	"github.com/civitops/Ecommercify/user/pkg/config"
 	"github.com/civitops/Ecommercify/user/transport/endpoints"
 	httpTransport "github.com/civitops/Ecommercify/user/transport/http"
-	"github.com/jackc/pgx/v4"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -88,20 +87,15 @@ func main() {
 	// }
 
 	// connecting postgres DB through Go-ORM
-	pgConn, err := gorm.Open(postgres.Open(cfg.DatabseURI), &gorm.Config{})
+	pgConn, err := gorm.Open(postgres.Open(cfg.DatabseURI), &gorm.Config{
+		SkipDefaultTransaction: true,
+	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+		zapLogger.Fatalf("Unable to connect to database: %v\n", err)
 	}
-	fmt.Println(pgConn.Statement.Vars...)
 
-	conn, err := pgx.Connect(ctx, cfg.DatabseURI)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
 	// declare service here
-	pgRepo := user.NewPostgresRepo(zapLogger, conn, pgConn, tracer)
+	pgRepo := user.NewPostgresRepo(zapLogger, pgConn, tracer)
 	u := user.NewUserService(zapLogger, *cfg, pgRepo, tracer)
 
 	end := endpoints.MakeEndpoints(tracer, u)

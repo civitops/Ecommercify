@@ -18,3 +18,7 @@ var (
 	HttpTimeOut                 = 5 * time.Second
 	ServerShutdownTimeOut       = 10 * time.Second
 )
+
+const (
+	UserTable string = "users"
+)
