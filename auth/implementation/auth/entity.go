@@ -1,4 +1,4 @@
-package user
+package auth
 
 type Entity struct {
 	ID          uint    `json:"id" mapstructure:"id,omitempty" db:"id"`
