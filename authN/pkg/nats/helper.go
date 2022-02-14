@@ -1,9 +1,7 @@
 package natshelper
 
 import (
-	"fmt"
 	"sync"
-	"time"
 
 	"github.com/civitops/Ecommercify/authN/pkg/config"
 
@@ -34,23 +32,23 @@ func SetupConnOptions(log *zap.SugaredLogger, wg *sync.WaitGroup) []nats.Option 
 }
 
 func CreateStream(js nats.JetStreamContext, log *zap.SugaredLogger) (err error) {
-	stream, _ := js.StreamInfo(config.UserStreamName)
-	if stream == nil {
-		subj := fmt.Sprintf("%s.*", config.UserStreamName)
-		log.Debugf("creating stream %q and subjects %q", config.UserStreamName, subj)
+	// stream, _ := js.StreamInfo(config.UserStreamName)
+	// if stream == nil {
+	// 	subj := fmt.Sprintf("%s.*", config.UserStreamName)
+	// 	log.Debugf("creating stream %q and subjects %q", config.UserStreamName, subj)
 
-		if _, err = js.AddStream(&nats.StreamConfig{
-			Name:        config.UserStreamName,
-			Description: "notification stream",
-			Subjects:    []string{subj},
-			Retention:   nats.WorkQueuePolicy,
-			Discard:     nats.DiscardOld,
-			MaxAge:      24 * time.Hour,
-			Storage:     nats.FileStorage,
-		}); err != nil {
-			return
-		}
-	}
+	// 	if _, err = js.AddStream(&nats.StreamConfig{
+	// 		Name:        config.UserStreamName,
+	// 		Description: "notification stream",
+	// 		Subjects:    []string{subj},
+	// 		Retention:   nats.WorkQueuePolicy,
+	// 		Discard:     nats.DiscardOld,
+	// 		MaxAge:      24 * time.Hour,
+	// 		Storage:     nats.FileStorage,
+	// 	}); err != nil {
+	// 		return
+	// 	}
+	// }
 
 	return nil
 }

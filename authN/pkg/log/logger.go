@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func NewLogger(cfg *config.UserConfig) *zap.SugaredLogger {
+func NewLogger(cfg *config.AuthNConfig) *zap.SugaredLogger {
 	logLevel := zaplogLevel(cfg)
 
 	logWriter := zapcore.AddSync(os.Stderr)
@@ -44,7 +44,7 @@ func NewLogger(cfg *config.UserConfig) *zap.SugaredLogger {
 	return logSugar
 }
 
-func zaplogLevel(cfg *config.UserConfig) (logLevel zapcore.Level) {
+func zaplogLevel(cfg *config.AuthNConfig) (logLevel zapcore.Level) {
 	switch cfg.LogLevel {
 	case "debug":
 		logLevel = zapcore.DebugLevel
