@@ -17,7 +17,9 @@ require (
 	go.uber.org/zap v1.17.0
 )
 
-require golang.org/x/crypto v0.0.0-20220210151621-f4118a5b28e2 // indirect
+require golang.org/x/crypto v0.0.0-20220210151621-f4118a5b28e2
+
+require github.com/go-playground/assert/v2 v2.0.1
 
 require (
 	github.com/felixge/httpsnoop v1.0.2 // indirect

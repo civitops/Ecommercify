@@ -3,9 +3,9 @@ package config
 import "time"
 
 const (
-	Development    string = "dev"
-	Production     string = "prod"
-	UserStreamName string = "USER"
+	Development   string = "dev"
+	Production    string = "prod"
+	UserCreateSub string = "USER.created"
 )
 
 var (

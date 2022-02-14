@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type UserConfig struct {
+type AuthNConfig struct {
 	PORT     string `mapstructure:"PORT"`
 	Mode     string `mapstructure:"MODE"`
 	LogLevel string `mapstructure:"LOG_LEVEL"`
@@ -22,7 +22,7 @@ var defaultsValue = map[string]string{
 	"DATABASE_URI": "postgres://postgres:mypass@localhost:5432/ecommercify",
 }
 
-func LoadConfig(path string) (*UserConfig, error) {
+func LoadConfig(path string) (*AuthNConfig, error) {
 	// "" -> loads timezone as UTC:
 	loc, err := time.LoadLocation("")
 	if err != nil {
@@ -44,7 +44,7 @@ func LoadConfig(path string) (*UserConfig, error) {
 		return nil, err
 	}
 
-	var cfg UserConfig
+	var cfg AuthNConfig
 
 	err = viper.Unmarshal(&cfg)
 
