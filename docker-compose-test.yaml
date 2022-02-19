@@ -1,0 +1,37 @@
+version: '3.7'
+services:
+    citusdata:
+        image: citusdata/citus:10.2
+        restart: always
+        environment:
+          - POSTGRES_USER=postgres
+          - POSTGRES_PASSWORD=mypass
+          - POSTGRES_DB=ecommercify
+        logging:
+          options:
+            max-size: 10m
+            max-file: "3"
+        ports:
+          - '5432:5432'
+    tracer:
+        image: jaegertracing/all-in-one:1.29
+        restart: always
+        environment:
+          - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+        ports:
+          - 5775:5775/udp
+          - 6831:6831/udp
+          - 6832:6832/udp
+          - 5778:5778
+          - 16686:16686
+          - 14268:14268
+          - 14250:14250
+          - 9411:9411  
+    nats:
+        image: docker.io/bitnami/nats:2
+        entrypoint: nats-server
+        command: --js
+        ports:
+          - '4222:4222'
+          - '6222:6222'
+          - '8222:8222'

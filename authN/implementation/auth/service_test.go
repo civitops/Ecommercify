@@ -21,8 +21,8 @@ func TestCompareHash(t *testing.T) {
 				saltLength:  16,
 				keyLength:   32,
 			},
-			password:   "sumandas",
-			RePassword: "sumandar",
+			password:   "test_password",
+			RePassword: "test^password",
 			match:      true,
 		},
 		{
@@ -34,8 +34,8 @@ func TestCompareHash(t *testing.T) {
 				saltLength:  16,
 				keyLength:   32,
 			},
-			password:   "sumandas",
-			RePassword: "sumandas",
+			password:   "test^password",
+			RePassword: "test^password",
 			match:      false,
 		},
 	}

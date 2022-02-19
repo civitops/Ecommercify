@@ -91,7 +91,7 @@ func TestUserCreate(t *testing.T) {
 				Name:    "Suman Das",
 				PhoneNo: "9856452136",
 				Email:   "suman@gmail.com",
-				IsAdmin: false,
+				Role:    4,
 			},
 		},
 		{
@@ -102,7 +102,7 @@ func TestUserCreate(t *testing.T) {
 				Name:    "Suman Das",
 				PhoneNo: "9856452136",
 				Email:   "suman@gmail.com",
-				IsAdmin: false,
+				Role:    3,
 			},
 		}, {
 			desc: "Creation should Fail No Name Provided",
@@ -112,7 +112,7 @@ func TestUserCreate(t *testing.T) {
 				Name:    "",
 				PhoneNo: "9856452536",
 				Email:   "suman@yahoo.com",
-				IsAdmin: false,
+				Role:    2,
 			},
 		},
 	}

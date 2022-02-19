@@ -8,11 +8,11 @@ import (
 )
 
 type UserConfig struct {
-	PORT       string `mapstructure:"PORT"`
-	Mode       string `mapstructure:"MODE"`
-	LogLevel   string `mapstructure:"LOG_LEVEL"`
-	Encoding   string `mapstructure:"ENCODING"`
-	DatabseURI string `mapstructure:"POSTGRES_URI"`
+	PORT        string `mapstructure:"PORT"`
+	Mode        string `mapstructure:"MODE"`
+	LogLevel    string `mapstructure:"LOG_LEVEL"`
+	Encoding    string `mapstructure:"ENCODING"`
+	DatabaseURI string `mapstructure:"POSTGRES_URI"`
 }
 
 var defaultsValue = map[string]string{

@@ -90,7 +90,7 @@ func main() {
 	}
 
 	// connecting postgres DB through Go-ORM
-	pgConn, err := gorm.Open(postgres.Open(cfg.DatabseURI), &gorm.Config{
+	pgConn, err := gorm.Open(postgres.Open(cfg.DatabaseURI), &gorm.Config{
 		SkipDefaultTransaction: true,
 	})
 	if err != nil {
