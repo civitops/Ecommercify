@@ -34,6 +34,8 @@ func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer, l *zap.Sugare
 		user.POST("/hello", h.endpointRequestEncoder(endpoints.HellowEndpoint))
 		user.POST("/create", h.endpointRequestEncoder(endpoints.CreateEndpoint))
 		user.PATCH("/update", h.endpointRequestEncoder(endpoints.UpdateEndpoint))
+		user.DELETE("/delete", h.endpointRequestEncoder(endpoints.DeleteEndpoint))
+		user.GET("/get", h.endpointRequestEncoder(endpoints.GetEndpoint))
 	}
 
 	return r

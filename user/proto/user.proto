@@ -1,36 +1,45 @@
 syntax = "proto3";
 
-option go_package ="github.com/civitops/Ecommercify/user/proto";
+option go_package ="./user";
 
 package proto;
 
 service AuthUser {
-  rpc createUser (User) returns (UserId) {}
-  rpc getUserByID(SignInUser) returns (bool){}
+  rpc CreateUser (User) returns (UserId) {}
+  rpc GetUserByID(SignInUser) returns (SignInAck){}
 }
+
 message SignInUser{
   string email = 1;
   string phoneNo = 2;
   string password = 3;
-  Role roleType = 4;
+  ROLE roleType = 4;
+}
+
+message UserId{
+  uint32 id = 1;
+}
+
+message SignInAck{
+  bool isValid = 1;
 }
 
 
 message User {
-  required string name = 1;
+  string name = 1;
   string phoneNo = 2;
   string email = 3;
-  required string password = 4;
+  string password = 4;
   Address homeAdress =5;
   Address deliveryAddress=6;
-  Role roleType = 6;
+  ROLE roleType = 7;
 }
 
 message Address{
-    required string phoneNo = 1;
-    required string addressLine = 2;
-    required string city = 3;
-    required string pinCode = 4;
+    string phoneNo = 1;
+    string addressLine = 2;
+    string city = 3;
+    string pinCode = 4;
     string landmark = 5;
    
 }
@@ -40,7 +49,4 @@ enum ROLE{
     Moderator = 2;
     Seller = 3;
     Customer = 4;
-}
-message UserId{
-  required uint id=1;
 }
