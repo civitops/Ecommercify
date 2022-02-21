@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+option go_package ="./user";
+
+package proto;
+
+service AuthUser {
+  rpc CreateUser (User) returns (UserId) {}
+  rpc GetUserByID(SignInUser) returns (SignInAck){}
+}
+
+message SignInUser{
+  string email = 1;
+  string phoneNo = 2;
+  
+  ROLE roleType = 4;
+}
+
+message UserId{
+  uint32 id = 1;
+}
+
+message SignInAck{
+  bool isValid = 1;
+  string password = 3;
+}
+
+
+message User {
+  string name = 1;
+  string phoneNo = 2;
+  string email = 3;
+  string password = 4;
+  Address homeAdress =5;
+  Address deliveryAddress=6;
+  ROLE roleType = 7;
+}
+
+message Address{
+    string phoneNo = 1;
+    string addressLine = 2;
+    string city = 3;
+    string pinCode = 4;
+    string landmark = 5;
+   
+}
+enum ROLE{
+    Admin=0;
+    Editor = 1;
+    Moderator = 2;
+    Seller = 3;
+    Customer = 4;
+}

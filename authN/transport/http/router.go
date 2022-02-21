@@ -3,39 +3,26 @@ package http
 import (
 	"net/http"
 
-	"github.com/civitops/Ecommercify/user/pkg"
-	"github.com/civitops/Ecommercify/user/transport/endpoints"
+	"github.com/civitops/Ecommercify/authN/pkg"
+	"github.com/civitops/Ecommercify/authN/transport/endpoints"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
-type httpSvc struct {
-	t   trace.Tracer
-	log *zap.SugaredLogger
-}
-
 // NewHTTPService takes all the endpoints and returns handler.
-func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer, l *zap.SugaredLogger) http.Handler {
-	h := httpSvc{
-		t:   t,
-		log: l,
-	}
+func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer) http.Handler {
 
 	r := echo.New()
 
 	r.Use(middleware.Recover())
 	r.Use(middleware.Logger())
 
-	user := r.Group("/user-svc/v1")
+	notif := r.Group("/notif-svc/v1")
 	{
-		user.POST("/hello", h.endpointRequestEncoder(endpoints.HellowEndpoint))
-		user.POST("/create", h.endpointRequestEncoder(endpoints.CreateEndpoint))
-		user.PATCH("/update", h.endpointRequestEncoder(endpoints.UpdateEndpoint))
-		user.DELETE("/delete", h.endpointRequestEncoder(endpoints.DeleteEndpoint))
-		user.GET("/get", h.endpointRequestEncoder(endpoints.GetEndpoint))
+		notif.POST("/create", endpointRequestEncoder(endpoints.HellowEndpoint, t))
 	}
 
 	return r
@@ -43,11 +30,11 @@ func NewHTTPService(endpoints endpoints.Endpoints, t trace.Tracer, l *zap.Sugare
 
 // endpointRequestEncoder encodes request and does error handling
 // and send response.
-func (h *httpSvc) endpointRequestEncoder(endpoint pkg.Endpoint) echo.HandlerFunc {
+func endpointRequestEncoder(endpoint pkg.Endpoint, t trace.Tracer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var statusCode int
 
-		ctx, span := h.t.Start(c.Request().Context(), "endpoint-Req-Encoder")
+		ctx, span := t.Start(c.Request().Context(), "endpoint-Req-Encoder")
 		defer span.End()
 
 		// process the request with its handler

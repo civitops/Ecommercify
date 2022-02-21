@@ -13,6 +13,8 @@ import (
 	"github.com/civitops/Ecommercify/auth/pkg/config"
 	"github.com/civitops/Ecommercify/auth/transport/endpoints"
 	httpTransport "github.com/civitops/Ecommercify/auth/transport/http"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -32,7 +34,7 @@ func main() {
 	wg.Add(1)
 
 	// fetchs configuration
-	cfg, err := config.LoadConfig(".")
+	cfg, err := config.LoadConfig("../")
 	if err != nil {
 		fmt.Printf("failed to load config: %s", err.Error())
 		os.Exit(1)
@@ -65,7 +67,7 @@ func main() {
 	propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
 	tracer := provider.Tracer("authSvc")
 
-	// // setting few basic nats opts and connecting to nats
+	// setting few basic nats opts and connecting to nats
 	// opts := natshelper.SetupConnOptions(zapLogger, &wg)
 	// natsConn, err := nats.Connect(nats.DefaultURL, opts...)
 	// if err != nil {
@@ -83,11 +85,14 @@ func main() {
 	// 	zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
 	// }
 
-	// conn, err := pgx.Connect(ctx, cfg.DatabseURL)
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-	// 	os.Exit(1)
-	// }
+	// connecting postgres DB through Go-ORM
+	pgConn, err := gorm.Open(postgres.Open(cfg.DatabseURI), &gorm.Config{
+		SkipDefaultTransaction: true,
+	})
+	if err != nil {
+		zapLogger.Fatalf("Unable to connect to database: %v\n", err)
+	}
+	println(pgConn.Error)
 
 	// declare service here
 
@@ -107,7 +112,7 @@ func main() {
 		),
 	}
 
-	// // start subscribing for notif events
+	// start subscribing for notif events
 	// go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
 	// 	// for the subscriber
 	// 	wg.Add(1)

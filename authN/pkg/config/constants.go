@@ -3,9 +3,9 @@ package config
 import "time"
 
 const (
-	Development string = "dev"
-	Production  string = "prod"
-	StreamName  string = "NOTIFS"
+	Development   string = "dev"
+	Production    string = "prod"
+	UserCreateSub string = "USER.created"
 )
 
 var (
@@ -17,4 +17,9 @@ var (
 	SmtpRetryDelay              = 2 * time.Second
 	HttpTimeOut                 = 5 * time.Second
 	ServerShutdownTimeOut       = 10 * time.Second
+)
+
+const (
+	UserTable string = "users"
+	authTable string = "auth"
 )

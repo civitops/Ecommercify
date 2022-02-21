@@ -10,15 +10,12 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/civitops/Ecommercify/user/implementation/event"
-	"github.com/civitops/Ecommercify/user/implementation/user"
-	"github.com/civitops/Ecommercify/user/pkg/config"
-	natshelper "github.com/civitops/Ecommercify/user/pkg/nats"
-	"github.com/civitops/Ecommercify/user/transport/endpoints"
-	httpTransport "github.com/civitops/Ecommercify/user/transport/http"
+	"github.com/civitops/Ecommercify/authN/pkg/config"
+	"github.com/civitops/Ecommercify/authN/transport/endpoints"
+	httpTransport "github.com/civitops/Ecommercify/authN/transport/http"
+
+	natshelper "github.com/civitops/Ecommercify/authN/pkg/nats"
 	"github.com/nats-io/nats.go"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -28,7 +25,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
-	logger "github.com/civitops/Ecommercify/user/pkg/log"
+	logger "github.com/civitops/Ecommercify/authN/pkg/log"
 )
 
 func main() {
@@ -56,7 +53,7 @@ func main() {
 	// Defining resource attributes
 	resource := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceNameKey.String("user-svc"),
+		semconv.ServiceNameKey.String("auth-svc"),
 		semconv.ServiceVersionKey.String("1.0.0"),
 		attribute.Int64("ID", 1),
 	)
@@ -69,7 +66,7 @@ func main() {
 
 	// b3 propagator initilizes
 	propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
-	tracer := provider.Tracer("userSvc")
+	tracer := provider.Tracer("authSvc")
 
 	// setting few basic nats opts and connecting to nats
 	opts := natshelper.SetupConnOptions(zapLogger, &wg)
@@ -89,20 +86,9 @@ func main() {
 		zapLogger.Fatalf("nats-js stream creation failed: %v", err.Error())
 	}
 
-	// connecting postgres DB through Go-ORM
-	pgConn, err := gorm.Open(postgres.Open(cfg.DatabaseURI), &gorm.Config{
-		SkipDefaultTransaction: true,
-	})
-	if err != nil {
-		zapLogger.Fatalf("Unable to connect to database: %v\n", err)
-	}
-
 	// declare service here
-	pgRepo := user.NewPostgresRepo(zapLogger, pgConn, tracer)
-	userSvc := user.NewUserService(zapLogger, *cfg, pgRepo, tracer)
-	eventSvc := event.NewEventService(zapLogger, js, userSvc, tracer, propagator)
-	end := endpoints.MakeEndpoints(tracer, userSvc)
-	h := httpTransport.NewHTTPService(end, tracer, zapLogger)
+	end := endpoints.MakeEndpoints(tracer)
+	h := httpTransport.NewHTTPService(end, tracer)
 
 	// creating server with timeout and assigning the routes
 	server := &http.Server{
@@ -116,16 +102,6 @@ func main() {
 			otelhttp.WithPropagators(propagator),
 		),
 	}
-
-	// start subscribing for user events
-	go func(ctx context.Context, conn *nats.Conn, wg *sync.WaitGroup) {
-		// to wait for the subscriber to return
-		eventSvc.RecvUserCreateRequest(ctx, wg)
-
-		// closing the connection because subscriber returned
-		zapLogger.Info("subscriber returned")
-		conn.Close()
-	}(ctx, natsConn, &wg)
 
 	// start listening and serving http server
 	go func() {
@@ -157,9 +133,6 @@ func main() {
 
 	// cancel the ctx to stop the pullSubscriber close the nats connection
 	cancelCtx()
-
-	// wait till the nats connection is closed and pullSubscriber returned
-	wg.Wait()
 
 	zapLogger.Info("application exited")
 }

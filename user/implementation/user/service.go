@@ -36,7 +36,6 @@ func NewUserService(l *zap.SugaredLogger, c config.UserConfig, r Repository, t t
 func (s *userService) Create(ctx context.Context, e Entity) (uint, error) {
 	ctxSpan, span := s.trace.Start(ctx, "create-svc-func")
 	defer span.End()
-
 	if e.Name == "" {
 		err := errors.New("name is Required")
 		errLogWithSpanAttributes("name not Provided inside Create Svc", err, span, s.log)
