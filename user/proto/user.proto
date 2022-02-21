@@ -12,7 +12,7 @@ service AuthUser {
 message SignInUser{
   string email = 1;
   string phoneNo = 2;
-  string password = 3;
+  
   ROLE roleType = 4;
 }
 
@@ -22,6 +22,7 @@ message UserId{
 
 message SignInAck{
   bool isValid = 1;
+  string password = 3;
 }
 
 
